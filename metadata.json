@@ -1,0 +1,6 @@
+{
+  "name": "AURA Intelligence Platform",
+  "description": "Student intelligence platform with predictive modeling, clustering analytics, and proactive intervention workflows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["Predictive Analytics", "Data Visualization", "Intervention Planning"]
+}
