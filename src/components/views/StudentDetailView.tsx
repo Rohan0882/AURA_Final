@@ -2,6 +2,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, Line
 import { User, Search, Activity, Zap, TrendingUp, TrendingDown } from 'lucide-react';
 import { Student } from '../../types/slis';
 import { motion } from 'motion/react';
+import { ExplainabilityModule } from '../explainability/ExplainabilityModule';
 
 interface StudentDetailViewProps {
   student: Student;
@@ -166,6 +167,8 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
           <div className="mt-8 text-center text-[10px] font-mono opacity-20 italic">SHAP value analysis / Local surrogate explanation active</div>
         </div>
       </div>
+
+      <ExplainabilityModule student={student} />
 
       <div className="bg-[#2B2F36]/30 border border-white/5 rounded-[48px] p-12 relative overflow-hidden shadow-xl">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/5 blur-[120px] rounded-full" />

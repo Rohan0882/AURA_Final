@@ -46,14 +46,14 @@ export function OverviewView({ students }: OverviewViewProps) {
   return (
     <div className="space-y-12 pb-20">
       <header className="space-y-2">
-        <h1 className="text-5xl font-black tracking-tighter flex items-center gap-4">
-          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-2xl">🎓</div>
-          AURA — Learning Intelligence Dashboard
+        <h1 className="text-3xl md:text-5xl font-black tracking-tighter flex items-center gap-4">
+          <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-xl md:text-2xl">🎓</div>
+          AURA Intelligence
         </h1>
-        <p className="text-zinc-400 font-medium tracking-wide">AI-powered insights for student success</p>
+        <p className="text-zinc-400 text-sm md:text-base font-medium tracking-wide">AI-powered insights for student success</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {metrics.map((m, i) => (
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
@@ -110,7 +110,7 @@ export function OverviewView({ students }: OverviewViewProps) {
               <div className="text-[11px] font-black uppercase text-zinc-300 tracking-[.3em] mt-2">Active Students</div>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-6 mt-10 pt-10 border-t border-white/5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-10 pt-10 border-t border-white/5">
             {pieData.map(d => (
               <div key={d.name} className="flex flex-col items-center gap-1">
                 <div style={{ color: d.color }} className="text-xl font-black">{((d.value/students.length)*100).toPrecision(2)}%</div>

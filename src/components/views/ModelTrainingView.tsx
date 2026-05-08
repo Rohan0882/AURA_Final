@@ -14,7 +14,13 @@ import {
   LineChart,
   Line,
   AreaChart,
-  Area
+  Area,
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Legend
 } from 'recharts';
 
 interface ModelTrainingViewProps {
@@ -22,6 +28,7 @@ interface ModelTrainingViewProps {
 }
 
 type ModelType = 'random_forest' | 'xgboost' | 'gradient_boost' | 'linear_regression';
+type FeatureImportanceType = 'gain' | 'weight' | 'coverage';
 type Feature = 'attendance' | 'gpa' | 'studyTime' | 'socioeconomicIndex' | 'quizCompletion' | 'assignmentCompletion' | 'consecutiveAbsences';
 type TargetVar = 'riskLevel' | 'avgScore' | 'finalGpa';
 
@@ -29,6 +36,7 @@ export function ModelTrainingView({ students }: ModelTrainingViewProps) {
   const [selectedFeatures, setSelectedFeatures] = useState<Feature[]>(['attendance', 'gpa', 'studyTime']);
   const [targetVar, setTargetVar] = useState<TargetVar>('riskLevel');
   const [modelType, setModelType] = useState<ModelType>('random_forest');
+  const [importanceType, setImportanceType] = useState<FeatureImportanceType>('gain');
   const [isTraining, setIsTraining] = useState(false);
   const [trainingProgress, setTrainingProgress] = useState(0);
   const [trainingStatus, setTrainingStatus] = useState<'idle' | 'training' | 'completed'>('idle');
@@ -40,7 +48,7 @@ export function ModelTrainingView({ students }: ModelTrainingViewProps) {
     recall: number;
     f1: number;
     rmse: number;
-    importance: { name: string; value: number }[];
+    importance: { name: string; value: number; weight: number; coverage: number }[];
     epochData: { epoch: number; loss: number; valLoss: number; accuracy: number }[];
   } | null>(null);
 
@@ -88,14 +96,16 @@ export function ModelTrainingView({ students }: ModelTrainingViewProps) {
     
     const importance = selectedFeatures.map(f => ({
       name: availableFeatures.find(af => af.id === f)?.label || f,
-      value: Math.random() * 100
+      value: Math.random() * 100, // Gain
+      weight: Math.random() * 100, // Weight
+      coverage: Math.random() * 100 // Coverage
     })).sort((a, b) => b.value - a.value);
 
-    const epochs = Array.from({ length: 10 }).map((_, i) => ({
+    const epochs = Array.from({ length: 15 }).map((_, i) => ({
       epoch: i + 1,
       loss: 0.5 / (i + 1) + Math.random() * 0.05,
       valLoss: 0.6 / (i + 1) + Math.random() * 0.1,
-      accuracy: 0.6 + (i * 0.04) + Math.random() * 0.02
+      accuracy: 0.6 + (i * 0.03) + Math.random() * 0.02
     }));
 
     setPerformanceMetrics({
@@ -111,6 +121,16 @@ export function ModelTrainingView({ students }: ModelTrainingViewProps) {
     setIsTraining(false);
     setTrainingStatus('completed');
   };
+
+  const getImportanceData = () => {
+    if (!performanceMetrics) return [];
+    return performanceMetrics.importance.map(imp => ({
+      name: imp.name,
+      value: importanceType === 'gain' ? imp.value : importanceType === 'weight' ? imp.weight : imp.coverage
+    })).sort((a, b) => b.value - a.value);
+  };
+
+  const importanceData = useMemo(() => getImportanceData(), [performanceMetrics, importanceType]);
 
   return (
     <div className="space-y-12">
@@ -319,71 +339,92 @@ export function ModelTrainingView({ students }: ModelTrainingViewProps) {
                  </div>
 
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                   {/* Feature Importance */}
-                   <div className="bg-[#2B2F36]/30 border border-white/5 rounded-[48px] p-10 h-[500px] flex flex-col group relative overflow-hidden">
+                   {/* Feature Importance Interactive */}
+                   <div className="bg-[#2B2F36]/30 border border-white/5 rounded-[48px] p-6 md:p-10 min-h-[500px] flex flex-col group relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
-                      <h3 className="text-2xl font-black mb-8 tracking-tight flex items-center gap-3">
-                         <BarChart size={24} className="text-cyan-500" />
-                         Variable Influence
-                      </h3>
+                      
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                         <h3 className="text-xl md:text-2xl font-black tracking-tight flex items-center gap-3">
+                            <BarChart size={24} className="text-cyan-500" />
+                            Feature Importance
+                         </h3>
+                         <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 w-full md:w-auto overflow-x-auto">
+                            {(['gain', 'weight', 'coverage'] as const).map((type) => (
+                               <button
+                                 key={type}
+                                 onClick={() => setImportanceType(type)}
+                                 className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 md:flex-none ${
+                                   importanceType === type 
+                                     ? 'bg-cyan-500 text-black' 
+                                     : 'text-zinc-500 hover:text-white'
+                                 }`}
+                               >
+                                 {type}
+                               </button>
+                            ))}
+                         </div>
+                      </div>
+
                       <div className="flex-1">
                         <ResponsiveContainer width="100%" height="100%">
-                          <ReBarChart data={performanceMetrics.importance} layout="vertical" margin={{ left: 20, right: 30 }}>
+                          <ReBarChart data={importanceData} layout="vertical" margin={{ left: 10, right: 30, top: 0, bottom: 0 }}>
                              <XAxis type="number" hide />
-                             <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#A1A1AA', fontSize: 10, fontWeight: '900' }} width={120} />
+                             <YAxis 
+                                dataKey="name" 
+                                type="category" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#A1A1AA', fontSize: 9, fontWeight: '900' }} 
+                                width={110} 
+                             />
                              <Tooltip 
                                 cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-                                contentStyle={{ backgroundColor: '#2B2F36', border: '1px solid #3F3F46', borderRadius: '24px' }}
+                                contentStyle={{ backgroundColor: '#2B2F36', border: '1px solid #3F3F46', borderRadius: '24px', fontSize: '10px' }}
                              />
-                             <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                                {performanceMetrics.importance.map((_, index) => (
-                                  <Cell key={index} fill={index === 0 ? '#06b6d4' : '#1f2937'} />
+                             <Bar dataKey="value" radius={[0, 8, 8, 0]} animationDuration={1000}>
+                                {importanceData.map((_, index) => (
+                                  <Cell key={index} fill={index === 0 ? '#06b6d4' : index === 1 ? '#0891b2' : '#1f2937'} />
                                 ))}
                              </Bar>
                           </ReBarChart>
                         </ResponsiveContainer>
                       </div>
-                      <div className="mt-8 text-center text-[10px] font-mono opacity-20">Calculated SHAP values for relative feature contribution</div>
+                      <div className="mt-6 flex items-center justify-between">
+                         <span className="text-[10px] font-mono opacity-20">Metrics calibrated via recursive partition</span>
+                         <div className="flex gap-2">
+                            <div className="w-2 h-2 bg-cyan-500 rounded-full" />
+                            <div className="w-2 h-2 bg-cyan-500/40 rounded-full" />
+                            <div className="w-2 h-2 bg-zinc-800 rounded-full" />
+                         </div>
+                      </div>
                    </div>
 
-                   {/* Loss/Accuracy Over Time */}
-                   <div className="bg-[#2B2F36]/30 border border-white/5 rounded-[48px] p-10 h-[500px] flex flex-col group relative overflow-hidden">
-                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
-                      <h3 className="text-2xl font-black mb-8 tracking-tight flex items-center gap-3">
-                         <Zap size={24} className="text-blue-500" />
-                         Evolution Dynamics
+                   {/* Radar Analysis */}
+                   <div className="bg-[#2B2F36]/30 border border-white/5 rounded-[48px] p-6 md:p-10 min-h-[500px] flex flex-col group relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
+                      <h3 className="text-xl md:text-2xl font-black mb-8 tracking-tight flex items-center gap-3">
+                         <Zap size={24} className="text-purple-500" />
+                         Global distribution
                       </h3>
-                      <div className="flex-1">
+                      <div className="flex-1 flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
-                           <AreaChart data={performanceMetrics.epochData}>
-                              <defs>
-                                <linearGradient id="colorLoss" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2}/>
-                                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                                </linearGradient>
-                                <linearGradient id="colorAcc" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                </linearGradient>
-                              </defs>
-                              <XAxis dataKey="epoch" axisLine={false} tickLine={false} tick={{ fill: '#A1A1AA', fontSize: 10, fontWeight: '900' }} />
-                              <YAxis hide />
-                              <Tooltip contentStyle={{ backgroundColor: '#2B2F36', border: '1px solid #3F3F46', borderRadius: '24px' }} />
-                              <Area type="monotone" dataKey="loss" stroke="#ef4444" fillOpacity={1} fill="url(#colorLoss)" strokeWidth={3} />
-                              <Area type="monotone" dataKey="accuracy" stroke="#3b82f6" fillOpacity={1} fill="url(#colorAcc)" strokeWidth={3} />
-                           </AreaChart>
+                           <RadarChart cx="50%" cy="50%" outerRadius="80%" data={performanceMetrics.importance}>
+                              <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                              <PolarAngleAxis dataKey="name" tick={{ fill: '#A1A1AA', fontSize: 8, fontWeight: '900' }} />
+                              <PolarRadiusAxis hide />
+                              <Radar
+                                name="Impact"
+                                dataKey="value"
+                                stroke="#a855f7"
+                                fill="#a855f7"
+                                fillOpacity={0.4}
+                                animationDuration={1500}
+                              />
+                              <Tooltip contentStyle={{ backgroundColor: '#2B2F36', border: '1px solid #3F3F46', borderRadius: '24px', fontSize: '10px' }} />
+                           </RadarChart>
                         </ResponsiveContainer>
                       </div>
-                      <div className="mt-8 flex justify-center gap-6 text-[9px] font-black uppercase tracking-widest text-zinc-500">
-                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-1 bg-blue-600 rounded-full" />
-                            <span>Precision Growth</span>
-                         </div>
-                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-1 bg-red-600 rounded-full" />
-                            <span>Entropy Loss</span>
-                         </div>
-                      </div>
+                      <div className="mt-8 text-center text-[10px] font-mono opacity-20">Normalized feature space dimensionality</div>
                    </div>
                  </div>
 

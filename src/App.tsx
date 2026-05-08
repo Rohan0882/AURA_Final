@@ -13,7 +13,7 @@ import { ModelTrainingView } from './components/views/ModelTrainingView';
 export default function App() {
   const [activeView, setActiveView] = useState<ViewType>('overview');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Default false for mobile, will adjust in useEffect if needed or keep manageable
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -23,6 +23,7 @@ export default function App() {
   const navigateToStudent = (student: Student) => {
     setSelectedStudent(student);
     setActiveView('student_detail');
+    if (window.innerWidth < 1024) setSidebarOpen(false);
   };
 
   const handleExport = () => {
@@ -92,15 +93,26 @@ export default function App() {
 
       {/* Sidebar Navigation */}
       <aside 
-        className={`${sidebarOpen ? 'w-80' : 'w-20'} transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${themeColors.bg} border-r ${themeColors.border} flex flex-col z-50 overflow-hidden text-inherit`}
+        className={`fixed lg:relative h-full transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${themeColors.bg} border-r ${themeColors.border} flex flex-col z-50 overflow-hidden text-inherit shadow-2xl lg:shadow-none
+          ${sidebarOpen ? 'w-80 translate-x-0' : 'w-0 lg:w-20 -translate-x-full lg:translate-x-0'}
+        `}
       >
         <div className="p-8 flex items-center justify-between whitespace-nowrap">
           <div className={`flex items-center gap-3 transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white">A</div>
             <span className="font-black text-2xl tracking-tighter italic">AURA</span>
           </div>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className={`p-2 hover:bg-zinc-500/10 rounded-xl transition-colors ${themeColors.text}`}>
-            {sidebarOpen ? <ChevronLeft size={18} /> : <Menu size={18} />}
+          <button 
+            onClick={() => setSidebarOpen(!sidebarOpen)} 
+            className={`p-2 hover:bg-zinc-500/10 rounded-xl transition-colors hidden lg:block ${themeColors.text}`}
+          >
+            <ChevronLeft size={18} className={sidebarOpen ? '' : 'rotate-180'} />
+          </button>
+          <button 
+            onClick={() => setSidebarOpen(false)} 
+            className={`p-2 hover:bg-zinc-500/10 rounded-xl transition-colors lg:hidden ${themeColors.text}`}
+          >
+            <ChevronLeft size={24} />
           </button>
         </div>
 
@@ -108,7 +120,10 @@ export default function App() {
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveView(item.id as ViewType)}
+              onClick={() => {
+                setActiveView(item.id as ViewType);
+                if (window.innerWidth < 1024) setSidebarOpen(false);
+              }}
               className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group whitespace-nowrap overflow-hidden ${
                 activeView === item.id 
                   ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]' 
@@ -118,7 +133,7 @@ export default function App() {
               <div className="flex-shrink-0 text-inherit">
                 <item.icon size={20} className={activeView === item.id ? 'animate-bounce' : 'group-hover:scale-110 transition-transform'} />
               </div>
-              {sidebarOpen && <span className="font-bold text-sm tracking-tight">{item.label}</span>}
+              {(sidebarOpen || (window.innerWidth < 1024 && sidebarOpen)) && <span className="font-bold text-sm tracking-tight">{item.label}</span>}
               {activeView === item.id && sidebarOpen && (
                 <motion.div layoutId="nav-dot" className="w-1.5 h-1.5 bg-white rounded-full ml-auto" />
               )}
@@ -145,32 +160,41 @@ export default function App() {
       {/* Main Content Area */}
       <main className={`flex-1 h-screen overflow-y-auto ${themeColors.bg} relative scrollbar-thin scrollbar-thumb-zinc-800 transition-colors duration-500`}>
         {/* Top Header */}
-        <header className={`sticky top-0 z-40 ${theme === 'dark' ? 'bg-[#1F2228]/80' : 'bg-white/80'} backdrop-blur-xl border-b ${themeColors.border} px-8 py-6 flex justify-between items-center transition-colors duration-500`}>
-           <div className="flex items-center gap-2">
-             <span className={`text-[10px] font-mono ${themeColors.subText} opacity-30 uppercase tracking-[0.3em]`}>Module</span>
-             <div className="h-1 w-8 bg-blue-600 rounded-full" />
-             <span className="text-sm font-black uppercase tracking-widest">{activeView.replace('_', ' ')}</span>
+        <header className={`sticky top-0 z-40 ${theme === 'dark' ? 'bg-[#1F2228]/80' : 'bg-white/80'} backdrop-blur-xl border-b ${themeColors.border} px-4 md:px-8 py-4 md:py-6 flex justify-between items-center transition-colors duration-500`}>
+           <div className="flex items-center gap-2 md:gap-4">
+             <button 
+               onClick={() => setSidebarOpen(true)}
+               className="p-2 lg:hidden hover:bg-white/5 rounded-xl transition-colors"
+             >
+               <Menu size={24} />
+             </button>
+             <div className="hidden sm:flex items-center gap-2">
+               <span className={`text-[10px] font-mono ${themeColors.subText} opacity-30 uppercase tracking-[0.3em]`}>Module</span>
+               <div className="h-1 w-8 bg-blue-600 rounded-full" />
+             </div>
+             <span className="text-xs md:text-sm font-black uppercase tracking-widest truncate max-w-[120px] sm:max-w-none">{activeView.replace('_', ' ')}</span>
            </div>
            
-           <div className="flex items-center gap-4">
+           <div className="flex items-center gap-2 md:gap-4">
               <button 
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className={`p-3 rounded-xl border ${themeColors.border} hover:bg-zinc-500/10 transition-all flex items-center gap-2`}
+                className={`p-2 md:p-3 rounded-xl border ${themeColors.border} hover:bg-zinc-500/10 transition-all flex items-center gap-2`}
               >
                 {theme === 'dark' ? <Lightbulb size={18} className="text-yellow-500" /> : <Database size={18} className="text-blue-600" />}
-                <span className="text-[10px] font-black uppercase tracking-widest">{theme} mode</span>
+                <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">{theme} mode</span>
               </button>
 
               <button 
                 onClick={handleExport}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
               >
-                Export Cohort Analysis
+                <span className="hidden sm:inline">Export Cohort</span>
+                <span className="sm:hidden text-[8px]">Export</span>
               </button>
               
               <div 
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative cursor-pointer hover:scale-110 transition-transform ml-2"
+                className="relative cursor-pointer hover:scale-110 transition-transform ml-1 md:ml-2"
               >
                 <Bell size={20} className={themeColors.subText} />
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[8px] font-black text-white">3</div>
@@ -178,7 +202,7 @@ export default function App() {
            </div>
         </header>
 
-        <section className="p-12 max-w-[1600px] mx-auto pb-32">
+        <section className="p-6 md:p-12 max-w-[1600px] mx-auto pb-32">
            <AnimatePresence mode="wait">
              <motion.div
                key={activeView}
