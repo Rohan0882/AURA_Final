@@ -191,10 +191,10 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
         </div>
         <div className="h-[400px]">
            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={student.performanceHistory}>
+              <LineChart data={student.performanceHistory} margin={{ bottom: 25, left: 10, right: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 'black', fill: '#A1A1AA' }} label={{ value: 'Academic Week', position: 'insideBottom', offset: -10, fill: '#A1A1AA', fontSize: 10, fontWeight: 'black' }} />
-                <YAxis hide domain={[0, 100]} />
+                <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'black', fill: '#A1A1AA' }} label={{ value: 'Academic Week', position: 'insideBottom', offset: -15, fill: '#A1A1AA', fontSize: 10, fontWeight: 'black', opacity: 0.5 }} />
+                <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 'black', fill: '#A1A1AA' }} width={40} />
                 <Tooltip 
                    contentStyle={{ backgroundColor: '#2B2F36', border: '1px solid #3F3F46', borderRadius: '24px', padding: '16px' }}
                    itemStyle={{ color: '#fff', fontSize: '13px', fontWeight: '900' }}
